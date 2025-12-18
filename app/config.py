@@ -40,6 +40,14 @@ class Settings(BaseSettings):
             raise ValueError(f"Wordlist file not found at: {v}")
         return v
 
+    allowed_mime_types: list[str] = Field(
+        default=[], description="List of allowed MIME types"
+    )
+
+    max_file_size: int = Field(
+        default=10 * 1024 * 1024, description="Maximum file size in bytes"
+    )
+
     # --- CONFIGURATION ---
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", case_sensitive=False, extra="ignore"
