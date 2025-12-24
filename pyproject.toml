@@ -9,10 +9,11 @@ dependencies = [
     "redis>=5.0.0",
     "pydantic-settings>=2.0.0",
     "python-multipart>=0.0.6",
-    "python-magic>=0.4.27",
     "structlog>=23.2.0",
     "apscheduler>=3.10.0",
     "aiofiles>=23.0.0",
+    "python-magic-bin>=0.4.14",
+    "cryptography>=46.0.3",
 ]
 
 [dependency-groups]
