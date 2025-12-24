@@ -28,6 +28,11 @@ class Settings(BaseSettings):
         default=Path("./storage/uploads"), description="Directory for storing uploads"
     )
 
+    temp_path: Path = Field(
+        default=Path("./storage/temp"),
+        description="Directory for storing temporary files",
+    )
+
     diceware_wordlist_path: Path = Field(
         default=Path("data/diceware_words.txt"),
         description="Path to the diceware dictionary file",
@@ -43,6 +48,9 @@ class Settings(BaseSettings):
     allowed_mime_types: list[str] = Field(
         default=[], description="List of allowed MIME types"
     )
+
+    cleanup_interval_minutes: int = 10
+    orphan_age_minutes: int = 15
 
     max_file_size: int = Field(
         default=10 * 1024 * 1024, description="Maximum file size in bytes"
