@@ -66,6 +66,8 @@ class UploadResponse(BaseModel):
         examples=["2024-12-10T15:50:00Z"],
     )
 
+    sha256: str = Field(description="SHA-256 hash of the original file")
+
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
@@ -77,6 +79,7 @@ class UploadResponse(BaseModel):
                 "filename": "document.pdf",
                 "size": 51200,
                 "created_at": "2024-12-10T15:50:00Z",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
             }
         }
     )
@@ -93,6 +96,7 @@ class PreviewResponse(BaseModel):
     download_url: str = Field(description="Download URL")
     curl_example: str = Field(description="cURL command example")
     created_at: datetime = Field(description="Upload time")
+    sha256: str = Field(description="SHA-256 hash for integrity verification")
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -107,6 +111,7 @@ class PreviewResponse(BaseModel):
                 "download_url": "https://raven.zero/download/correct-horse-battery",
                 "curl_example": "curl -O https://raven.zero/download/correct-horse-battery",
                 "created_at": "2024-12-10T15:50:00Z",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
             }
         }
     )

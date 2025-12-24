@@ -1,3 +1,4 @@
+import hashlib
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -62,6 +63,8 @@ class StorageService:
             print("  → Validating file...")
             metadata = {"mime_type": mime_type, "filename": file.filename}
 
+            file_hash = hashlib.sha256(content).hexdigest()
+
             is_valid, error_msg = await self.validator.validate_all(content, metadata)
 
             if not is_valid:
@@ -88,7 +91,7 @@ class StorageService:
 
             print("✅ File saved successfully")
 
-            return str(file_path), mime_type, len(content)
+            return str(file_path), mime_type, len(content), file_hash
 
         except HTTPException:
             raise

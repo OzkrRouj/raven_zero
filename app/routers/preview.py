@@ -41,4 +41,5 @@ async def preview_upload(key: str, request: Request, redis: Redis = Depends(get_
         download_url=download_url,
         curl_example=f"curl -O {download_url}",
         created_at=metadata["created_at"],
+        sha256=metadata.get("sha256", "unknown"),
     )

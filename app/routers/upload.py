@@ -40,7 +40,7 @@ async def upload_file(
         enc_key = security_service.generate_key()
         print(f"  ✓ Key generated: {key}")
 
-        file_path, mime_type, size = await storage_service.save_file(
+        file_path, mime_type, size, file_hash = await storage_service.save_file(
             file=file, upload_key=key, encryption_key=enc_key
         )
 
@@ -55,6 +55,7 @@ async def upload_file(
             "filename": file.filename,
             "size": size,
             "mime_type": mime_type,
+            "sha256": file_hash,
             "created_at": now.isoformat(),
             "expiry_at": expiry_dt.isoformat(),
             "uses": uses,
@@ -80,6 +81,7 @@ async def upload_file(
             filename=file.filename,
             size=size,
             created_at=now,
+            sha256=file_hash,
         )
     except HTTPException as http_exc:
         raise http_exc

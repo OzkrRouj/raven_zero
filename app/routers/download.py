@@ -1,3 +1,5 @@
+import hashlib
+
 import aiofiles
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from fastapi.responses import Response
@@ -30,10 +32,9 @@ async def download_file(
         raise HTTPException(status_code=410, detail="Download limit has been reached")
 
     metadata = await cache_service.get_upload_metadata(redis, key)
+
     if not metadata or "encryption_key" not in metadata:
         raise HTTPException(status_code=404, detail="Error retrieving security key")
-
-    enc_key = metadata.get("encryption_key")
 
     file_path = await storage_service.get_file_path(
         upload_key=key, filename=metadata["filename"]
@@ -42,22 +43,46 @@ async def download_file(
     if not file_path:
         raise HTTPException(status_code=404, detail="File does not exist on the server")
 
+    original_hash = metadata.get("sha256")
+    enc_key = metadata.get("encryption_key")
+
     try:
         async with aiofiles.open(file_path, "rb") as f:
             encrypted_data = await f.read()
 
             decrypted_data = security_service.decrypt_data(encrypted_data, enc_key)
+
+            current_hash = hashlib.sha256(decrypted_data).hexdigest()
+
+            if original_hash and current_hash != original_hash:
+                print(f"❌ INTEGRITY FAILURE: {key}")
+                raise HTTPException(
+                    status_code=500,
+                    detail={
+                        "error_code": "INTEGRITY_CHECK_FAILED",
+                        "integrity_report": {
+                            "expected": original_hash,
+                            "actual": current_hash,
+                        },
+                    },
+                )
+
+    except HTTPException:
+        raise
     except Exception as e:
-        print(f"❌ Error decrypting: {e}")
-        raise HTTPException(status_code=500, detail="File integrity error")
+        print(f"❌ Decryption/System Error: {e}")
+        raise HTTPException(status_code=500, detail="Security error processing file")
 
     if remaining == 0:
         background_tasks.add_task(task_autodestruction, key, redis)
+
+    print(f"✅ Download successful: {key}")
 
     return Response(
         content=decrypted_data,
         media_type=metadata["mime_type"],
         headers={
-            "Content-Disposition": f'attachment; filename="{metadata["filename"]}"'
+            "Content-Disposition": f'attachment; filename="{metadata["filename"]}"',
+            "X-SHA256": original_hash,
         },
     )
