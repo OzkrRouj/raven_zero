@@ -4,6 +4,7 @@ from typing import Optional, Tuple
 from fastapi import HTTPException, UploadFile
 
 from app.config import settings
+from app.core.security import security_service
 
 from .mime_detector import MagicMimeDetector, MimeDetector
 from .path_manager import StoragePathManager
@@ -45,6 +46,7 @@ class StorageService:
         self,
         file: UploadFile,
         upload_key: str,
+        encryption_key: str,
     ) -> Tuple[str, str, int]:
         try:
             print(f"📤 Starting file save: {file.filename}")
@@ -75,7 +77,9 @@ class StorageService:
             file_path = self.path_manager.get_file_path(upload_key, safe_filename)
             print(f"  → Saving to: {file_path}")
 
-            success = await self.repository.save(content, file_path)
+            encrypted_content = security_service.encrypt_data(content, encryption_key)
+
+            success = await self.repository.save(encrypted_content, file_path)
 
             if not success:
                 raise HTTPException(
@@ -84,29 +88,23 @@ class StorageService:
 
             print("✅ File saved successfully")
 
-            # Retornar información
             return str(file_path), mime_type, len(content)
 
         except HTTPException:
             raise
 
         except Exception as e:
-            # Para cualquier otro error
             print(f"❌ Unexpected error: {e}")
 
-            # Intentar limpiar
             await self.cleanup_upload(upload_key)
 
-            # Lanzar excepción HTTP
             raise HTTPException(status_code=500, detail=f"Error saving file: {str(e)}")
 
     async def get_file_path(self, upload_key: str, filename: str) -> Optional[Path]:
         safe_filename = self.sanitizer.sanitize(filename)
 
-        # Obtener ruta
         file_path = self.path_manager.get_file_path(upload_key, safe_filename)
 
-        # Verificar si existe
         if await self.repository.exists(file_path):
             return file_path
 
@@ -115,10 +113,8 @@ class StorageService:
     async def delete_upload(self, upload_key: str) -> bool:
         print(f"🗑️  Deleting upload: {upload_key}")
 
-        # Obtener directorio del upload
         upload_dir = self.path_manager.get_upload_directory(upload_key)
 
-        # Eliminar todo el directorio
         success = await self.repository.delete_directory(upload_dir)
 
         if success:
