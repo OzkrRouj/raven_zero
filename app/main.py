@@ -1,10 +1,11 @@
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI
-from redis.asyncio import Redis
+from fastapi import FastAPI
 
 from app.config import settings
-from app.core.redis import get_redis, redis_client
+from app.core.redis import redis_client
+from app.routers import download, health, preview, upload
+from app.services.scheduler import shutdown_scheduler, start_scheduler
 
 
 @asynccontextmanager
@@ -12,29 +13,35 @@ async def lifespan(app: FastAPI):
     print("🚀 Starting App...")
     try:
         await redis_client.ping()
-        print("✅ Redis conected")
+        print("✅ Redis connected")
 
         settings.storage_path.mkdir(parents=True, exist_ok=True)
         print(f"📂 Storage directory: {settings.storage_path}")
+        if hasattr(settings, "temp_path"):
+            settings.temp_path.mkdir(parents=True, exist_ok=True)
+
+        start_scheduler()
+        print("✅ Scheduler started successfully")
 
     except Exception as e:
         print("\n❌ ERROR: Failed to initialize infrastructure.")
         print(f"Details: {e}")
         print("The application will now close.\n")
-        # Forzamos la salida para que no parezca que todo está bien
         raise SystemExit(1)
 
     yield
 
     print("👋 Shutting down application...")
+
+    shutdown_scheduler()
+
     await redis_client.close()
     print("🔌 Redis connection closed gracefully")
 
 
 app = FastAPI(title="Raven Zero API", lifespan=lifespan)
 
-
-@app.get("/health")
-async def health_check(redis: Redis = Depends(get_redis)):
-    is_alive = await redis.ping()
-    return {"status": "OK", "redis": is_alive}
+app.include_router(upload.router)
+app.include_router(preview.router)
+app.include_router(download.router)
+app.include_router(health.router)
