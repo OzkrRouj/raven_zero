@@ -4,6 +4,7 @@ from fastapi import FastAPI
 
 from app.config import settings
 from app.core.redis import redis_client
+from app.core.security_headers import SecurityHeadersMiddleware
 from app.routers import download, health, preview, upload
 from app.services.scheduler import shutdown_scheduler, start_scheduler
 
@@ -40,6 +41,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Raven Zero API", lifespan=lifespan)
+
+app.add_middleware(SecurityHeadersMiddleware)
 
 app.include_router(upload.router)
 app.include_router(preview.router)
