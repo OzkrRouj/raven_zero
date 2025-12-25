@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends
 from redis.asyncio import Redis
 
 from app.config import settings
+from app.core.logger import logger
 from app.core.redis import get_redis
 from app.models.schemas import HealthResponse
 from app.services.diceware import diceware_service
@@ -46,6 +47,11 @@ async def health_check(redis: Redis = Depends(get_redis)):
 
     critical_services = [services["redis"], services["storage"], services["diceware"]]
     is_healthy = all(s == "online" for s in critical_services)
+
+    if is_healthy:
+        logger.info("health_check_completed", status="healthy", services=services)
+    else:
+        logger.warning("health_check_completed", status="degraded", services=services)
 
     return HealthResponse(
         status="healthy" if is_healthy else "degraded",

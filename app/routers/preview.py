@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from redis.asyncio import Redis
 
+from app.core.logger import logger
 from app.core.redis import get_redis
 from app.models.schemas import PreviewResponse
 from app.services.cache import cache_service
@@ -11,21 +12,25 @@ router = APIRouter(prefix="/preview", tags=["Preview"])
 @router.get("/{key}", response_model=PreviewResponse)
 async def preview_upload(key: str, request: Request, redis: Redis = Depends(get_redis)):
     if not await cache_service.exists(redis, key):
+        logger.warning("preview_not_found_or_expired", key=key)
         raise HTTPException(status_code=404, detail="Upload not found or expired")
 
     was_first_time = await cache_service.mark_as_previewed_atomic(redis, key)
 
     if not was_first_time:
+        logger.warning("preview_already_accessed", key=key)
         raise HTTPException(
             status_code=404,
             detail="""
-            This file preview has already been accessed 
+            This file preview has already been accessed
             and is no longer available for security reasons.
             """,
         )
 
     metadata = await cache_service.get_upload_metadata(redis, key)
     ttl = await cache_service.get_ttl(redis, key)
+
+    logger.info("preview_requested", key=key, filename=metadata["filename"])
 
     base_url = str(request.base_url).rstrip("/")
     download_url = f"{base_url}/download/{key}"

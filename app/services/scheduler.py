@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import shutil
 from datetime import datetime, timezone
 
@@ -9,9 +8,8 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
 from app.config import settings
+from app.core.logger import logger
 from app.core.redis import get_redis
-
-logger = logging.getLogger(__name__)
 
 jobstores = {"default": MemoryJobStore()}
 executors = {"default": AsyncIOExecutor()}
@@ -23,17 +21,17 @@ scheduler = AsyncIOScheduler(
 
 
 async def cleanup_orphaned_files():
-    logger.info("🧹 [Scheduler] Starting orphaned files scan...")
+    logger.info("cleanup_orphaned_files_started")
 
     try:
         redis = await get_redis()
         if not redis:
-            logger.error("❌ [Scheduler] No Redis connection. Aborting cleanup.")
+            logger.error("redis_connection_failed", context="cleanup_orphaned_files")
             return
 
         storage_path = settings.storage_path
         if not storage_path.exists():
-            logger.warning(f"⚠️ [Scheduler] Path not found: {storage_path}")
+            logger.warning("storage_path_not_found", path=str(storage_path))
             return
 
         now = datetime.now(timezone.utc)
@@ -59,24 +57,35 @@ async def cleanup_orphaned_files():
 
                     if age_minutes > orphan_limit_minutes:
                         logger.info(
-                            f"🗑️ Removing orphan: {folder.name} (Age: {age_minutes:.1f} min)"
+                            "removing_orphaned_folder",
+                            folder=folder.name,
+                            age_minutes=round(age_minutes, 1),
+                            created_at=created_time.isoformat(),
                         )
-
                         await asyncio.to_thread(shutil.rmtree, folder)
                         cleaned_count += 1
 
             except Exception as e:
-                logger.error(f"❌ Error processing folder {folder.name}: {e}")
+                logger.error(
+                    "error_processing_folder",
+                    folder=folder.name,
+                    error=str(e),
+                    exc_info=True,
+                )
 
-        if cleaned_count > 0:
-            logger.info(f"✅ [Scheduler] Cleanup completed. Removed: {cleaned_count}")
-        else:
-            logger.debug("✅ [Scheduler] No orphaned files to remove.")
+        logger.info(
+            "cleanup_completed",
+            removed_count=cleaned_count,
+            total_duration_seconds=round(
+                (datetime.now(timezone.utc) - now).total_seconds(), 2
+            ),
+        )
 
         await redis.set("health:last_cleanup", now.isoformat())
 
     except Exception as e:
-        logger.error(f"❌ [Scheduler] Critical error in cleanup job: {e}")
+        logger.critical("cleanup_job_failed", error=str(e), exc_info=True)
+        raise
 
 
 async def health_check_marker():

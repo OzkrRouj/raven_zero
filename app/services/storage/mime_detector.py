@@ -3,6 +3,8 @@ from typing import Optional
 
 import magic
 
+from app.core.logger import logger
+
 
 class MimeDetector(ABC):
     @abstractmethod
@@ -18,5 +20,5 @@ class MagicMimeDetector(MimeDetector):
             return detected
 
         except Exception as e:
-            print(f"⚠️  Error detecting MIME type: {e}")
+            logger.warning("error_detecting_mime_type", error=str(e))
             return declared_type or "application/octet-stream"

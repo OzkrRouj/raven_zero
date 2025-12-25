@@ -1,47 +1,50 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.config import settings
+from app.core.logger import logger, setup_logging
+from app.core.logging_middleware import logging_middleware
 from app.core.redis import redis_client
 from app.core.security_headers import SecurityHeadersMiddleware
 from app.routers import download, health, preview, upload
 from app.services.scheduler import shutdown_scheduler, start_scheduler
 
+setup_logging()
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print("🚀 Starting App...")
+    logger.info("app_starting")
     try:
         await redis_client.ping()
-        print("✅ Redis connected")
+        logger.info("redis_connected")
 
         settings.storage_path.mkdir(parents=True, exist_ok=True)
-        print(f"📂 Storage directory: {settings.storage_path}")
+        logger.info("storage_directory_initialized", path=str(settings.storage_path))
         if hasattr(settings, "temp_path"):
             settings.temp_path.mkdir(parents=True, exist_ok=True)
 
         start_scheduler()
-        print("✅ Scheduler started successfully")
+        logger.info("scheduler_started_successfully")
 
     except Exception as e:
-        print("\n❌ ERROR: Failed to initialize infrastructure.")
-        print(f"Details: {e}")
-        print("The application will now close.\n")
+        logger.critical("infrastructure_initialization_failed", error=str(e))
         raise SystemExit(1)
 
-    yield
-
-    print("👋 Shutting down application...")
-
-    shutdown_scheduler()
-
-    await redis_client.close()
-    print("🔌 Redis connection closed gracefully")
+    try:
+        yield
+    finally:
+        logger.info("application_shutdown_started")
+        shutdown_scheduler()
+        await redis_client.close()
+        logger.info("redis_connection_closed")
 
 
 app = FastAPI(title="Raven Zero API", lifespan=lifespan)
 
+app.add_middleware(BaseHTTPMiddleware, dispatch=logging_middleware)
 app.add_middleware(SecurityHeadersMiddleware)
 
 app.include_router(upload.router)

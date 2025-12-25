@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, UploadFile
 from redis.asyncio import Redis
 
+from app.core.logger import logger
 from app.core.redis import get_redis
 from app.core.security import security_service
 from app.models.schemas import UploadResponse
@@ -34,18 +35,18 @@ async def upload_file(
     file_saved = False
 
     try:
-        print(f"📤 Starting upload: {file.filename}")
+        logger.info("file_upload_started", filename=file.filename)
 
         key = await diceware_service.generate_unique_key(redis)
         enc_key = security_service.generate_key()
-        print(f"  ✓ Key generated: {key}")
+        logger.info("upload_key_generated", key=key)
 
         file_path, mime_type, size, file_hash = await storage_service.save_file(
             file=file, upload_key=key, encryption_key=enc_key
         )
 
         file_saved = True
-        print(f"  ✓ File validated and saved to: {file_path}")
+        logger.info("file_saved", file_path=file_path, key=key)
 
         now = datetime.now(timezone.utc)
         expiry_dt = now + timedelta(minutes=expiry)
@@ -68,7 +69,7 @@ async def upload_file(
             ttl_seconds=ttl_seconds,
             encryption_key=enc_key,
         )
-        print("  ✓ Metadata saved to Redis")
+        logger.info("metadata_saved", key=key)
 
         base_url = str(request.base_url).rstrip("/")
 
@@ -87,11 +88,11 @@ async def upload_file(
         raise http_exc
 
     except Exception as e:
-        print(f"❌ Critical upload error: {str(e)}")
+        logger.error("upload_failed", error=str(e), key=key)
 
         if file_saved and key:
             await storage_service.delete_upload(key)
-            print(f"🔄 Rollback executed: File {key} deleted")
+            logger.info("rollback_executed", key=key)
 
         raise HTTPException(
             status_code=500, detail=f"Internal error while processing upload: {str(e)}"

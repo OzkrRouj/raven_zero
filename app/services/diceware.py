@@ -4,16 +4,19 @@ from typing import List
 
 from redis.asyncio import Redis
 
+from app.core.logger import logger
+
 
 class DicewareService:
     def __init__(self, wordlist_path: str | Path = "data/diceware_words.txt"):
         self.wordlist_path = Path(wordlist_path)
         self.wordlist = self._load_wordlist()
 
-        print(f"✅ Diceware wordlist loaded: {len(self.wordlist)} words")
+        logger.info("diceware_wordlist_loaded", word_count=len(self.wordlist))
 
     def _load_wordlist(self) -> tuple[str, ...]:
         if not self.wordlist_path.exists():
+            logger.error("wordlist_file_not_found", path=str(self.wordlist_path))
             raise FileNotFoundError(f"Wordlist file not found: {self.wordlist_path}")
 
         words: List[str] = []
@@ -28,12 +31,14 @@ class DicewareService:
                 parts = line.split()
 
                 if len(parts) != 2:
+                    logger.error("malformed_wordlist_line", line_num=line_num, line=line)
                     raise ValueError(f"Malformed line {line_num}: {line}")
 
                 word = parts[1]
                 words.append(word)
 
         if len(words) != 7776:
+            logger.error("wordlist_size_invalid", expected=7776, actual=len(words))
             raise ValueError(f"Wordlist must has 7776 words, has {len(words)}")
 
         return tuple(words)
@@ -52,10 +57,12 @@ class DicewareService:
             exists = await redis.exists(key)
 
             if not exists:
+                logger.info("unique_key_generated", key=key)
                 return key
 
-            print(f"⚠️  Diceware collision detected: {key} (attempt {attempt + 1})")
+            logger.warning("diceware_collision_detected", key=key, attempt=attempt + 1)
 
+        logger.critical("failed_to_generate_unique_key", max_attempts=max_attempts)
         raise RuntimeError(
             f"Failed to generate unique key after {max_attempts} attempts. "
             f"This should NOT happen (probability: 1 in 10^30)"
@@ -65,9 +72,13 @@ class DicewareService:
         words = key.split("-")
 
         if len(words) != 3:
+            logger.info("key_format_invalid", key=key, word_count=len(words))
             return False
 
-        return all(word in self.wordlist for word in words)
+        is_valid = all(word in self.wordlist for word in words)
+        if not is_valid:
+            logger.info("key_contains_invalid_words", key=key)
+        return is_valid
 
     def get_stats(self) -> dict:
         import math

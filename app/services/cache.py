@@ -2,6 +2,8 @@ from typing import Optional
 
 from redis.asyncio import Redis
 
+from app.core.logger import logger
+
 
 class CacheService:
     @staticmethod
@@ -27,9 +29,10 @@ class CacheService:
 
                 await pipe.execute()
 
+            logger.info("metadata_saved", key=key)
             return True
         except Exception as e:
-            print(f"❌ Error saving metadata: {e}")
+            logger.error("error_saving_metadata", key=key, error=str(e))
             raise
 
     @staticmethod
@@ -48,8 +51,10 @@ class CacheService:
             data, uses, previewed = res
 
             if not data:
+                logger.warning("metadata_not_found", key=key)
                 return None
 
+            logger.info("metadata_retrieved", key=key)
             return {
                 **data,
                 "uses": int(uses) if uses else 0,
@@ -57,7 +62,7 @@ class CacheService:
             }
 
         except Exception as e:
-            print(f"❌ Error getting metadata: {e}")
+            logger.error("error_getting_metadata", key=key, error=str(e))
             raise
 
     @staticmethod

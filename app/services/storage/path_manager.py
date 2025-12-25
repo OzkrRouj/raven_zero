@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from app.core.logger import logger
+
 
 class StoragePathManager:
     def __init__(self, base_path: str):
@@ -12,9 +14,7 @@ class StoragePathManager:
         self.base_path.mkdir(exist_ok=True, parents=True)
         self.temp_path.mkdir(exist_ok=True)
 
-        print("✓ Storage directories ready:")
-        print(f"  Base: {self.base_path}")
-        print(f"  Temp: {self.temp_path}")
+        logger.info("storage_directories_ready", base_path=str(self.base_path), temp_path=str(self.temp_path))
 
     def get_upload_directory(self, upload_key: str) -> Path:
         return self.base_path / upload_key
