@@ -15,7 +15,7 @@ router = APIRouter(prefix="/download", tags=["Download"])
 
 
 async def task_autodestruction(key: str, redis: Redis):
-    logger.info("file_self_destruction_executed", key=key)
+    logger.info("file_self_destruction_executed")
     await storage_service.delete_upload(key)
     await cache_service.delete_upload(redis, key)
 
@@ -27,17 +27,17 @@ async def download_file(
     remaining = await cache_service.decrement_uses(redis, key)
 
     if remaining == -2:
-        logger.warning("file_not_found_or_expired", key=key)
+        logger.warning("file_not_found_or_expired")
         raise HTTPException(status_code=404, detail="File not found or link expired")
 
     if remaining == -1:
-        logger.warning("download_limit_reached", key=key)
+        logger.warning("download_limit_reached")
         raise HTTPException(status_code=410, detail="Download limit has been reached")
 
     metadata = await cache_service.get_upload_metadata(redis, key)
 
     if not metadata or "encryption_key" not in metadata:
-        logger.error("error_retrieving_security_key", key=key)
+        logger.error("error_retrieving_security_key")
         raise HTTPException(status_code=404, detail="Error retrieving security key")
 
     file_path = await storage_service.get_file_path(
@@ -45,7 +45,7 @@ async def download_file(
     )
 
     if not file_path:
-        logger.error("file_not_exist_on_server", key=key)
+        logger.error("file_not_exist_on_server")
         raise HTTPException(status_code=404, detail="File does not exist on the server")
 
     original_hash = metadata.get("sha256")
@@ -61,7 +61,6 @@ async def download_file(
 
             if original_hash and current_hash != original_hash:
                 logger.error("file_integrity_check_failed",
-                             key=key,
                              expected_hash=original_hash,
                              actual_hash=current_hash)
                 raise HTTPException(
@@ -78,13 +77,13 @@ async def download_file(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("decryption_system_error", error=str(e), key=key)
+        logger.error("decryption_system_error", error=str(e))
         raise HTTPException(status_code=500, detail="Security error processing file")
 
     if remaining == 0:
         background_tasks.add_task(task_autodestruction, key, redis)
 
-    logger.info("file_download_success", key=key, filename=metadata["filename"])
+    logger.info("file_download_success")
 
     return Response(
         content=decrypted_data,

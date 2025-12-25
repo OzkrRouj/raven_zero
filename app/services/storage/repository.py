@@ -31,11 +31,11 @@ class LocalFileRepository(FileRepository):
             async with aiofiles.open(path, "wb") as f:
                 await f.write(content)
 
-            logger.info("file_saved", file_path=str(path))
+            logger.info("file_saved")
             return True
 
         except Exception as e:
-            logger.error("error_saving_file", file_path=str(path), error=str(e))
+            logger.error("error_saving_file", error=str(e))
             return False
 
     async def exists(self, path: Path) -> bool:
@@ -45,25 +45,25 @@ class LocalFileRepository(FileRepository):
         try:
             if await self.exists(path):
                 await aiofiles.os.remove(path)
-                logger.info("file_deleted", file_path=str(path))
+                logger.info("file_deleted")
                 return True
 
-            logger.warning("file_does_not_exist", file_path=str(path))
+            logger.warning("file_does_not_exist")
             return False
 
         except Exception as e:
-            logger.error("error_deleting_file", file_path=str(path), error=str(e))
+            logger.error("error_deleting_file", error=str(e))
             return False
 
     async def delete_directory(self, path: Path) -> bool:
         try:
             if await self.exists(path):
                 await asyncio.to_thread(shutil.rmtree, path)
-                logger.info("directory_deleted", directory_path=str(path))
+                logger.info("directory_deleted")
                 return True
 
-            logger.warning("directory_does_not_exist", directory_path=str(path))
+            logger.warning("directory_does_not_exist")
             return False
         except Exception as e:
-            logger.error("error_deleting_directory", directory_path=str(path), error=str(e))
+            logger.error("error_deleting_directory", error=str(e))
             return False

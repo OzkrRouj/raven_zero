@@ -12,13 +12,13 @@ router = APIRouter(prefix="/preview", tags=["Preview"])
 @router.get("/{key}", response_model=PreviewResponse)
 async def preview_upload(key: str, request: Request, redis: Redis = Depends(get_redis)):
     if not await cache_service.exists(redis, key):
-        logger.warning("preview_not_found_or_expired", key=key)
-        raise HTTPException(status_code=404, detail="Upload not found or expired")
+        logger.warning("preview_not_found_or_expired")
+        raise HTTPException(status_code=404, detail="Upload not found or link expired")
 
     was_first_time = await cache_service.mark_as_previewed_atomic(redis, key)
 
     if not was_first_time:
-        logger.warning("preview_already_accessed", key=key)
+        logger.warning("preview_already_accessed")
         raise HTTPException(
             status_code=404,
             detail="""
@@ -30,7 +30,7 @@ async def preview_upload(key: str, request: Request, redis: Redis = Depends(get_
     metadata = await cache_service.get_upload_metadata(redis, key)
     ttl = await cache_service.get_ttl(redis, key)
 
-    logger.info("preview_requested", key=key, filename=metadata["filename"])
+    logger.info("preview_requested")
 
     base_url = str(request.base_url).rstrip("/")
     download_url = f"{base_url}/download/{key}"

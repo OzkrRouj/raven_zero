@@ -13,7 +13,6 @@ async def logging_middleware(request: Request, call_next):
     structlog.contextvars.clear_contextvars()
     structlog.contextvars.bind_contextvars(
         request_id=request_id,
-        ip=request.client.host,
         method=request.method,
         path=request.url.path,
     )

@@ -31,7 +31,7 @@ async def cleanup_orphaned_files():
 
         storage_path = settings.storage_path
         if not storage_path.exists():
-            logger.warning("storage_path_not_found", path=str(storage_path))
+            logger.warning("storage_path_not_found")
             return
 
         now = datetime.now(timezone.utc)
@@ -58,7 +58,6 @@ async def cleanup_orphaned_files():
                     if age_minutes > orphan_limit_minutes:
                         logger.info(
                             "removing_orphaned_folder",
-                            folder=folder.name,
                             age_minutes=round(age_minutes, 1),
                             created_at=created_time.isoformat(),
                         )
@@ -68,7 +67,6 @@ async def cleanup_orphaned_files():
             except Exception as e:
                 logger.error(
                     "error_processing_folder",
-                    folder=folder.name,
                     error=str(e),
                     exc_info=True,
                 )

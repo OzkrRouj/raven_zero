@@ -12,11 +12,11 @@ class DicewareService:
         self.wordlist_path = Path(wordlist_path)
         self.wordlist = self._load_wordlist()
 
-        logger.info("diceware_wordlist_loaded", word_count=len(self.wordlist))
+        logger.info("diceware_wordlist_loaded")
 
     def _load_wordlist(self) -> tuple[str, ...]:
         if not self.wordlist_path.exists():
-            logger.error("wordlist_file_not_found", path=str(self.wordlist_path))
+            logger.error("wordlist_file_not_found")
             raise FileNotFoundError(f"Wordlist file not found: {self.wordlist_path}")
 
         words: List[str] = []
@@ -31,7 +31,7 @@ class DicewareService:
                 parts = line.split()
 
                 if len(parts) != 2:
-                    logger.error("malformed_wordlist_line", line_num=line_num, line=line)
+                    logger.error("malformed_wordlist_line", line_num=line_num)
                     raise ValueError(f"Malformed line {line_num}: {line}")
 
                 word = parts[1]
@@ -57,10 +57,10 @@ class DicewareService:
             exists = await redis.exists(key)
 
             if not exists:
-                logger.info("unique_key_generated", key=key)
+                logger.info("unique_key_generated")
                 return key
 
-            logger.warning("diceware_collision_detected", key=key, attempt=attempt + 1)
+            logger.warning("diceware_collision_detected", attempt=attempt + 1)
 
         logger.critical("failed_to_generate_unique_key", max_attempts=max_attempts)
         raise RuntimeError(
@@ -72,12 +72,12 @@ class DicewareService:
         words = key.split("-")
 
         if len(words) != 3:
-            logger.info("key_format_invalid", key=key, word_count=len(words))
+            logger.info("key_format_invalid", word_count=len(words))
             return False
 
         is_valid = all(word in self.wordlist for word in words)
         if not is_valid:
-            logger.info("key_contains_invalid_words", key=key)
+            logger.info("key_contains_invalid_words")
         return is_valid
 
     def get_stats(self) -> dict:

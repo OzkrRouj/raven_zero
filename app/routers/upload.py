@@ -35,18 +35,18 @@ async def upload_file(
     file_saved = False
 
     try:
-        logger.info("file_upload_started", filename=file.filename)
+        logger.info("file_upload_started")
 
         key = await diceware_service.generate_unique_key(redis)
         enc_key = security_service.generate_key()
-        logger.info("upload_key_generated", key=key)
+        logger.info("upload_key_generated")
 
         file_path, mime_type, size, file_hash = await storage_service.save_file(
             file=file, upload_key=key, encryption_key=enc_key
         )
 
         file_saved = True
-        logger.info("file_saved", file_path=file_path, key=key)
+        logger.info("file_saved")
 
         now = datetime.now(timezone.utc)
         expiry_dt = now + timedelta(minutes=expiry)
@@ -69,7 +69,7 @@ async def upload_file(
             ttl_seconds=ttl_seconds,
             encryption_key=enc_key,
         )
-        logger.info("metadata_saved", key=key)
+        logger.info("metadata_saved")
 
         base_url = str(request.base_url).rstrip("/")
 
@@ -88,11 +88,11 @@ async def upload_file(
         raise http_exc
 
     except Exception as e:
-        logger.error("upload_failed", error=str(e), key=key)
+        logger.error("upload_failed", error=str(e))
 
         if file_saved and key:
             await storage_service.delete_upload(key)
-            logger.info("rollback_executed", key=key)
+            logger.info("rollback_executed")
 
         raise HTTPException(
             status_code=500, detail=f"Internal error while processing upload: {str(e)}"

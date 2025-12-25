@@ -51,17 +51,17 @@ class StorageService:
         encryption_key: str,
     ) -> Tuple[str, str, int]:
         try:
-            logger.info("starting_file_save", filename=file.filename, key=upload_key)
+            logger.info("starting_file_save")
 
-            logger.debug("reading_file_content", filename=file.filename)
+            logger.debug("reading_file_content")
             content = await file.read()
-            logger.debug("file_content_read", filename=file.filename, size=len(content))
+            logger.debug("file_content_read", size=len(content))
 
-            logger.debug("detecting_mime_type", filename=file.filename)
+            logger.debug("detecting_mime_type")
             mime_type = await self.mime_detector.detect(content, file.content_type)
-            logger.debug("mime_type_detected", filename=file.filename, mime_type=mime_type)
+            logger.debug("mime_type_detected", mime_type=mime_type)
 
-            logger.debug("validating_file", filename=file.filename)
+            logger.debug("validating_file")
             metadata = {"mime_type": mime_type, "filename": file.filename}
 
             file_hash = hashlib.sha256(content).hexdigest()
@@ -69,29 +69,29 @@ class StorageService:
             is_valid, error_msg = await self.validator.validate_all(content, metadata)
 
             if not is_valid:
-                logger.warning("file_validation_failed", filename=file.filename, error_msg=error_msg)
+                logger.warning("file_validation_failed", error_msg=error_msg)
                 raise HTTPException(status_code=400, detail=error_msg)
 
-            logger.debug("file_validation_successful", filename=file.filename)
+            logger.debug("file_validation_successful")
 
-            logger.debug("sanitizing_filename", filename=file.filename)
+            logger.debug("sanitizing_filename")
             safe_filename = self.sanitizer.sanitize(file.filename)
-            logger.debug("filename_sanitized", original_filename=file.filename, safe_filename=safe_filename)
+            logger.debug("filename_sanitized")
 
             file_path = self.path_manager.get_file_path(upload_key, safe_filename)
-            logger.debug("saving_file_to_path", file_path=str(file_path))
+            logger.debug("saving_file_to_path")
 
             encrypted_content = security_service.encrypt_data(content, encryption_key)
 
             success = await self.repository.save(encrypted_content, file_path)
 
             if not success:
-                logger.error("error_saving_file_to_repository", file_path=str(file_path))
+                logger.error("error_saving_file_to_repository")
                 raise HTTPException(
                     status_code=500, detail="Error saving file to repository"
                 )
 
-            logger.info("file_saved_successfully", file_path=str(file_path), key=upload_key)
+            logger.info("file_saved_successfully")
 
             return str(file_path), mime_type, len(content), file_hash
 
@@ -99,7 +99,7 @@ class StorageService:
             raise
 
         except Exception as e:
-            logger.error("unexpected_error_during_file_save", filename=file.filename, key=upload_key, error=str(e))
+            logger.error("unexpected_error_during_file_save", error=str(e))
 
             await self.cleanup_upload(upload_key)
 
@@ -116,16 +116,16 @@ class StorageService:
         return None
 
     async def delete_upload(self, upload_key: str) -> bool:
-        logger.info("deleting_upload", key=upload_key)
+        logger.info("deleting_upload")
 
         upload_dir = self.path_manager.get_upload_directory(upload_key)
 
         success = await self.repository.delete_directory(upload_dir)
 
         if success:
-            logger.info("upload_deleted", key=upload_key)
+            logger.info("upload_deleted")
         else:
-            logger.warning("upload_not_exist", key=upload_key)
+            logger.warning("upload_not_exist")
 
         return success
 

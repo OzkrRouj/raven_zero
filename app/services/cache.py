@@ -29,10 +29,10 @@ class CacheService:
 
                 await pipe.execute()
 
-            logger.info("metadata_saved", key=key)
+            logger.info("metadata_saved")
             return True
         except Exception as e:
-            logger.error("error_saving_metadata", key=key, error=str(e))
+            logger.error("error_saving_metadata", error=str(e))
             raise
 
     @staticmethod
@@ -51,10 +51,10 @@ class CacheService:
             data, uses, previewed = res
 
             if not data:
-                logger.warning("metadata_not_found", key=key)
+                logger.warning("metadata_not_found")
                 return None
 
-            logger.info("metadata_retrieved", key=key)
+            logger.info("metadata_retrieved")
             return {
                 **data,
                 "uses": int(uses) if uses else 0,
@@ -62,7 +62,7 @@ class CacheService:
             }
 
         except Exception as e:
-            logger.error("error_getting_metadata", key=key, error=str(e))
+            logger.error("error_getting_metadata", error=str(e))
             raise
 
     @staticmethod
