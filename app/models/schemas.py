@@ -138,3 +138,30 @@ class HealthResponse(BaseModel):
         description="Estado detallado de cada componente",
         examples=[{"redis": "online", "storage": "online", "diceware": "online"}],
     )
+
+
+class StatusResponse(BaseModel):
+    key: str = Field(description="Clave del archivo")
+    status: str = Field(
+        description="Estado actual del archivo",
+        examples=["active", "burned", "expired"],
+    )
+    remaining_uses: int = Field(default=0, description="Descargas restantes")
+    expires_at: datetime | None = Field(
+        default=None, description="Fecha de expiración original"
+    )
+    is_accessible: bool = Field(
+        description="Indica si el archivo se puede descargar actualmente"
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "key": "correct-horse-battery",
+                "status": "active",
+                "remaining_uses": 2,
+                "expires_at": "2025-12-25T18:00:00Z",
+                "is_accessible": True,
+            }
+        }
+    )

@@ -8,7 +8,7 @@ from app.core.logger import logger, setup_logging
 from app.core.logging_middleware import logging_middleware
 from app.core.redis import redis_client
 from app.core.security_headers import SecurityHeadersMiddleware
-from app.routers import download, health, preview, upload
+from app.routers import download, health, preview, status, upload
 from app.services.scheduler import shutdown_scheduler, start_scheduler
 
 setup_logging()
@@ -51,3 +51,4 @@ app.include_router(upload.router)
 app.include_router(preview.router)
 app.include_router(download.router)
 app.include_router(health.router)
+app.include_router(status.router)
