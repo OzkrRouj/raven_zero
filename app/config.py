@@ -62,6 +62,9 @@ class Settings(BaseSettings):
     download_fail_limit: int = 10
     download_block_window: int = 1800
 
+    # --- DELETION ---
+    secure_shred_passes: int = 1
+
     # --- CONFIGURATION ---
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", case_sensitive=False, extra="ignore"
