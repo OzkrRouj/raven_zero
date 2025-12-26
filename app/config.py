@@ -56,6 +56,12 @@ class Settings(BaseSettings):
         default=10 * 1024 * 1024, description="Maximum file size in bytes"
     )
 
+    # --- RATE LIMITING ---
+    upload_rate_limit: str = "30/hour"
+    heatlh_rate_limit: str = "1/second"
+    download_fail_limit: int = 10
+    download_block_window: int = 1800
+
     # --- CONFIGURATION ---
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", case_sensitive=False, extra="ignore"

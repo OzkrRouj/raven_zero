@@ -1,11 +1,12 @@
 import os
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from redis.asyncio import Redis
 
 from app.config import settings
 from app.core.logger import logger
+from app.core.rate_limiting import limiter
 from app.core.redis import get_redis
 from app.models.schemas import HealthResponse
 from app.services.diceware import diceware_service
@@ -14,7 +15,8 @@ router = APIRouter(prefix="/health", tags=["Health"])
 
 
 @router.get("/", response_model=HealthResponse)
-async def health_check(redis: Redis = Depends(get_redis)):
+@limiter.limit(settings.heatlh_rate_limit)
+async def health_check(request: Request, redis: Redis = Depends(get_redis)):
     services = {
         "redis": "offline",
         "storage": "offline",

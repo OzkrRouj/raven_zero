@@ -15,6 +15,7 @@ dependencies = [
     "python-magic-bin>=0.4.14",
     "cryptography>=46.0.3",
     "logging>=0.4.9.6",
+    "slowapi>=0.1.9",
 ]
 
 [dependency-groups]

@@ -1,11 +1,13 @@
 import hashlib
 
 import aiofiles
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from fastapi.responses import Response
 from redis.asyncio import Redis
 
+from app.config import settings
 from app.core.logger import logger
+from app.core.rate_limiting import get_client_ip
 from app.core.redis import get_redis
 from app.core.security import security_service
 from app.services.cache import cache_service
@@ -22,9 +24,33 @@ async def task_autodestruction(key: str, redis: Redis):
 
 @router.get("/{key}")
 async def download_file(
-    key: str, background_tasks: BackgroundTasks, redis: Redis = Depends(get_redis)
+    key: str,
+    background_tasks: BackgroundTasks,
+    request: Request,
+    redis: Redis = Depends(get_redis),
 ):
+    client_ip = get_client_ip(request)
+    block_key = f"block:download:{client_ip}"
+    fail_key = f"fails:download:{client_ip}"
+
+    if await redis.get(block_key):
+        logger.warning("blocked_ip_attempted_access", extra={"ip": client_ip})
+        raise HTTPException(
+            status_code=429,
+            detail="Demasiados intentos fallidos. Bloqueado temporalmente.",
+        )
+
     remaining = await cache_service.decrement_uses(redis, key)
+
+    if remaining < 0:
+        fails = await redis.incr(fail_key)
+        await redis.expire(fail_key, 600)
+
+        if fails >= settings.download_fail_limit:
+            await redis.setex(block_key, settings.download_block_window, "1")
+            logger.error("ip_blocked_brute_force", extra={"ip": client_ip})
+
+        raise HTTPException(status_code=404, detail="File not found")
 
     if remaining == -2:
         logger.warning("file_not_found_or_expired")
@@ -60,9 +86,11 @@ async def download_file(
             current_hash = hashlib.sha256(decrypted_data).hexdigest()
 
             if original_hash and current_hash != original_hash:
-                logger.error("file_integrity_check_failed",
-                             expected_hash=original_hash,
-                             actual_hash=current_hash)
+                logger.error(
+                    "file_integrity_check_failed",
+                    expected_hash=original_hash,
+                    actual_hash=current_hash,
+                )
                 raise HTTPException(
                     status_code=500,
                     detail={

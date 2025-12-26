@@ -3,7 +3,9 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, UploadFile
 from redis.asyncio import Redis
 
+from app.config import settings
 from app.core.logger import logger
+from app.core.rate_limiting import limiter
 from app.core.redis import get_redis
 from app.core.security import security_service
 from app.models.schemas import UploadResponse
@@ -24,6 +26,7 @@ router = APIRouter(
     summary="Upload a file",
     description="Upload a file with auto-destruction parameters",
 )
+@limiter.limit(settings.upload_rate_limit)
 async def upload_file(
     request: Request,
     file: UploadFile,
