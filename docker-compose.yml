@@ -9,6 +9,7 @@ services:
       - ./storage:/app/storage
     depends_on:
       - valkey
+    restart: on-failure
 
   valkey:
     image: valkey/valkey:9-alpine
