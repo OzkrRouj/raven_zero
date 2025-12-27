@@ -138,6 +138,10 @@ class HealthResponse(BaseModel):
         description="Estado detallado de cada componente",
         examples=[{"redis": "online", "storage": "online", "diceware": "online"}],
     )
+    uptime_seconds: int = Field(description="Seconds since start")
+    started_at: datetime | None = Field(
+        default=None, description="App start time (UTC)"
+    )
 
 
 class StatusResponse(BaseModel):

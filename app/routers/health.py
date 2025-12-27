@@ -8,6 +8,7 @@ from app.config import settings
 from app.core.logger import logger
 from app.core.rate_limiting import limiter
 from app.core.redis import get_redis
+from app.core.uptime import uptime_tracker
 from app.models.schemas import HealthResponse
 from app.services.diceware import diceware_service
 
@@ -60,4 +61,6 @@ async def health_check(request: Request, redis: Redis = Depends(get_redis)):
         version="0.1.0",
         timestamp=datetime.now(timezone.utc),
         services=services,
+        uptime_seconds=uptime_tracker.uptime_seconds,
+        started_at=uptime_tracker.start_time,
     )

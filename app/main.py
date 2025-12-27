@@ -10,6 +10,7 @@ from app.core.logging_middleware import logging_middleware
 from app.core.rate_limiting import init_rate_limiting
 from app.core.redis import redis_client
 from app.core.security_headers import SecurityHeadersMiddleware
+from app.core.uptime import uptime_tracker
 from app.routers import download, health, preview, status, upload
 from app.services.scheduler import shutdown_scheduler, start_scheduler
 
@@ -22,6 +23,9 @@ async def lifespan(app: FastAPI):
     try:
         await redis_client.ping()
         logger.info("redis_connected")
+
+        uptime_tracker.start()
+        logger.info("uptime_tracker_started")
 
         settings.storage_path.mkdir(parents=True, exist_ok=True)
         logger.info("storage_directory_initialized", path=str(settings.storage_path))
