@@ -10,8 +10,16 @@ services:
     depends_on:
       - valkey
     restart: on-failure
+    networks:
+      - raven-net
 
   valkey:
     image: valkey/valkey:9-alpine
     ports:
       - "6379:6379"
+    networks:
+      - raven-net
+
+networks:
+  raven-net:
+    driver: bridge
