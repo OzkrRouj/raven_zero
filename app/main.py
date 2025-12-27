@@ -2,9 +2,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.middleware.base import BaseHTTPMiddleware
-
 from scalar_fastapi import get_scalar_api_reference
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.config import settings
 from app.core.logger import logger, setup_logging
@@ -50,8 +49,46 @@ async def lifespan(app: FastAPI):
         logger.info("redis_connection_closed")
 
 
-app = FastAPI(title="Raven Zero API", lifespan=lifespan)
+app = FastAPI(
+    title="Raven Zero API",
+    description="""
+# Raven Zero - Ephemeral File Sharing
 
+**Privacy by design. Files self-destruct after download or time limit.**
+
+## Quick Start
+
+Upload a file:
+```bash
+curl -F "file=@document.pdf" -F "expiry=10" -F "uses=1" https://rzapi.ozkr.dev/upload/
+```
+
+Download:
+```bash
+curl https://rzapi.ozkr.dev/download/apple-banana-cherry -o file.pdf
+```
+
+## Features
+- 🔥 **Auto-destruction**: Files expire by time OR download count
+- 🔒 **Encrypted storage**: AES-256 encryption at rest
+- 🎲 **Diceware keys**: Human-readable, shareable keys
+- ⚡ **No registration**: Anonymous by design
+- 🚫 **Zero tracking**: No logs, no analytics, no cookies
+
+## Limits
+- **Max file size**: 1MB
+- **Max expiry**: 60 minutes
+- **Max downloads**: 5 uses
+- **Rate limiting**: Active (per IP)
+
+## Philosophy
+> "The best way to protect data is to not have it."
+
+Ephemeral by design, private by default, open by principle.
+    """,
+    version="0.1.0",
+    lifespan=lifespan,
+)
 init_rate_limiting(app)
 
 app.add_middleware(
