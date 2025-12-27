@@ -4,6 +4,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from scalar_fastapi import get_scalar_api_reference
+
 from app.config import settings
 from app.core.logger import logger, setup_logging
 from app.core.logging_middleware import logging_middleware
@@ -67,3 +69,11 @@ app.include_router(preview.router)
 app.include_router(download.router)
 app.include_router(health.router)
 app.include_router(status.router)
+
+
+@app.get("/scalar", include_in_schema=False)
+async def scalar_html():
+    return get_scalar_api_reference(
+        openapi_url=app.openapi_url,
+        title=app.title,
+    )
