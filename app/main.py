@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.config import settings
@@ -46,6 +47,13 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Raven Zero API", lifespan=lifespan)
 
 init_rate_limiting(app)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type", "Accept"],
+)
 
 app.add_middleware(BaseHTTPMiddleware, dispatch=logging_middleware)
 app.add_middleware(SecurityHeadersMiddleware)
