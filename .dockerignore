@@ -44,7 +44,6 @@ docs
 # Local data
 storage/*
 logs/*
-data/*
 *.log
 
 # OS
