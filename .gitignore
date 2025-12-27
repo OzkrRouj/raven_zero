@@ -13,3 +13,6 @@ wheels/
 /storage/
 /logs/
 *.log
+
+
+docs-ext/
