@@ -6,7 +6,7 @@ services:
     environment:
       - REDIS_URL=redis://valkey:6379/0
     volumes:
-      - ./storage:/app/storage
+      - ./logs:/app/logs
     depends_on:
       - valkey
     restart: on-failure
