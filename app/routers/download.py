@@ -119,5 +119,7 @@ async def download_file(
         headers={
             "Content-Disposition": f'attachment; filename="{metadata["filename"]}"',
             "X-SHA256": original_hash,
+            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0, no-transform",
+            "Content-Encoding": "identity",
         },
     )
