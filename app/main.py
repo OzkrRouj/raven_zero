@@ -96,6 +96,7 @@ app.add_middleware(
     allow_origins=["*"],
     allow_methods=["GET", "POST"],
     allow_headers=["Content-Type", "Accept"],
+    expose_headers=["x-sha256", "content-disposition"],
 )
 
 app.add_middleware(BaseHTTPMiddleware, dispatch=logging_middleware)
