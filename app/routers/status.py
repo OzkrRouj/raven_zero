@@ -19,8 +19,8 @@ async def get_file_status(
     key: str, request: Request, redis: Redis = Depends(get_redis)
 ):
     client_ip = get_client_ip(request)
-    block_key = f"block:status:{client_ip}"
-    fail_key = f"fails:status:{client_ip}"
+    block_key = f"block:global:{client_ip}"
+    fail_key = f"fails:global:{client_ip}"
 
     if await redis.get(block_key):
         ttl = await redis.ttl(block_key)

@@ -30,8 +30,8 @@ async def download_file(
     redis: Redis = Depends(get_redis),
 ):
     client_ip = get_client_ip(request)
-    block_key = f"block:download:{client_ip}"
-    fail_key = f"fails:download:{client_ip}"
+    block_key = f"block:global:{client_ip}"
+    fail_key = f"fails:global:{client_ip}"
 
     if await redis.get(block_key):
         ttl = await redis.ttl(block_key)
