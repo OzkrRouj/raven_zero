@@ -34,10 +34,16 @@ async def download_file(
     fail_key = f"fails:download:{client_ip}"
 
     if await redis.get(block_key):
-        logger.warning("blocked_ip_attempted_access", extra={"ip": client_ip})
+        ttl = await redis.ttl(block_key)
+        logger.warning(
+            "blocked_ip_attempted_access", extra={"ip": client_ip, "ttl": ttl}
+        )
         raise HTTPException(
             status_code=429,
-            detail="Demasiados intentos fallidos. Bloqueado temporalmente.",
+            detail={
+                "error": "Too many failed attempts. Temporarily blocked.",
+                "retry_after_seconds": ttl,
+            },
         )
 
     remaining = await cache_service.decrement_uses(redis, key)
