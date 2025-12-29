@@ -18,11 +18,17 @@ async def preview_upload(key: str, request: Request, redis: Redis = Depends(get_
     fail_key = f"fails:preview:{client_ip}"
 
     if await redis.get(block_key):
+        ttl = await redis.ttl(block_key)
         logger.warning(
-            "blocked_ip_attempted_preview", extra={"ip": client_ip, "key": key}
+            "blocked_ip_attempted_preview",
+            extra={"ip": client_ip, "key": key, "ttl": ttl},
         )
         raise HTTPException(
-            status_code=429, detail="Demasiados intentos fallidos. Inténtalo más tarde."
+            status_code=429,
+            detail={
+                "error": "Too many failed attempts. Temporarily blocked.",
+                "retry_after_seconds": ttl,
+            },
         )
 
     if not await cache_service.exists(redis, key):

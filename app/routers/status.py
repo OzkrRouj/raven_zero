@@ -23,11 +23,17 @@ async def get_file_status(
     fail_key = f"fails:status:{client_ip}"
 
     if await redis.get(block_key):
+        ttl = await redis.ttl(block_key)
         logger.warning(
-            "blocked_ip_attempted_status", extra={"ip": client_ip, "key": key}
+            "blocked_ip_attempted_status",
+            extra={"ip": client_ip, "key": key, "ttl": ttl},
         )
         raise HTTPException(
-            status_code=429, detail="Demasiados intentos. Bloqueado temporalmente."
+            status_code=429,
+            detail={
+                "error": "Too many failed attempts. Temporarily blocked.",
+                "retry_after_seconds": ttl,
+            },
         )
 
     data = await redis.hgetall(f"upload:{key}")
